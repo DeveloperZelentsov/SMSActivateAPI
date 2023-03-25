@@ -80,7 +80,7 @@ extension SmsActivateEndpoint: CustomEndpoint {
             
         case .setStatus(let request):
             items.append(.init(name: "action", value: "setStatus"))
-            items.append(.init(name: "id", value: request.id))
+            items.append(.init(name: "id", value: request.id.description))
             items.append(.init(name: "status", value: String(request.status.rawValue)))
             if let forward = request.forward {
                 items.append(.init(name: "forward", value: forward))

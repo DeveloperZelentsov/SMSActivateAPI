@@ -197,7 +197,7 @@ final class SmsActivateApiTests: XCTestCase {
         }
         
         // Call API
-        let setStatusRequest = SetStatusRequest(id: "34134", status: .cancelActivation)
+        let setStatusRequest = SetStatusRequest(id: 34134, status: .cancelActivation)
         Task {
             do {
                 let response = try await smsActivateAPI.setStatus(request: setStatusRequest)

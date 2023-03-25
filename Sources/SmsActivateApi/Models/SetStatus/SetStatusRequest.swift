@@ -9,7 +9,7 @@ import Foundation
 
 public struct SetStatusRequest: Codable {
     
-    let id: String
+    let id: Int
     let status: ActivationStatus
     var forward: String?
 
@@ -20,7 +20,7 @@ public struct SetStatusRequest: Codable {
         case cancelActivation = 8
     }
     
-    public init(id: String, status: ActivationStatus, forward: String? = nil) {
+    public init(id: Int, status: ActivationStatus, forward: String? = nil) {
         self.id = id
         self.status = status
         self.forward = forward
