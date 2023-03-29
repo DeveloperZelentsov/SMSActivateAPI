@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum SetStatusResponse: String, Codable {
+public enum SetActivationStatusResponse: String, Codable {
     case accessReady = "ACCESS_READY"
     case accessRetryGet = "ACCESS_RETRY_GET"
     case accessActivation = "ACCESS_ACTIVATION"

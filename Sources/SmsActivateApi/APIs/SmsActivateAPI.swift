@@ -14,9 +14,9 @@ public protocol ISmsActivateAPI: AnyObject {
     func getBalance(with state: BalanceState) async throws -> String
     
     /// Requests a phone number.
-    /// - Parameter request: A GetNumberRequest object containing the phone number request information.
+    /// - Parameter request: A GetActivateNumberRequest object containing the phone number request information.
     /// - Returns: A tuple with two Int values, the first representing the activation ID, and the second representing the phone number.
-    func getNumber(request: GetNumberRequest) async throws -> (Int, Int)
+    func getNumber(request: GetActivateNumberRequest) async throws -> (Int, Int)
     
     /// Gets available operators for a given country.
     /// - Parameter countryId: The country code for which the operators are to be retrieved.
@@ -37,9 +37,18 @@ public protocol ISmsActivateAPI: AnyObject {
     func getActiveActivations() async throws -> [ActiveActivation]
     
     /// Sets the activation status.
-    /// - Parameter request: A SetStatusRequest object containing the activation status update information.
-    /// - Returns: A SetStatusResponse object representing the response from the SMS Activate API.
-    func setStatus(request: SetStatusRequest) async throws -> SetStatusResponse
+    /// - Parameter request: A SetActivationStatusRequest object containing the activation status update information.
+    /// - Returns: A SetActivationStatusResponse object representing the response from the SMS Activate API.
+    func setStatus(request: SetActivationStatusRequest) async throws -> SetActivationStatusResponse
+    
+    /// Waits for a code to be received from the server.
+    /// - Parameters:
+    ///   - id: The activation ID.
+    ///   - attempts: The number of attempts to wait for the SMS code from the server. Default value is 40. (About 2 minutes)
+    ///   - setStatusAfterCompletion: A boolean indicating whether to set the status after receiving the code or not. Default value is false.
+    /// - Returns: The received code as a string.
+    /// - Throws: An error if the code was not received after the specified number of attempts or if the activation was cancelled.
+    func waitForCode(id: Int, attempts: Int, setStatusAfterCompletion: Bool) async throws -> String
 }
 
 public final class SmsActivateAPI: HTTPClient, ISmsActivateAPI {
@@ -68,7 +77,7 @@ public final class SmsActivateAPI: HTTPClient, ISmsActivateAPI {
         throw SmsActivateError.badAnswer
     }
     
-    public func getNumber(request: GetNumberRequest) async throws -> (Int, Int) {
+    public func getNumber(request: GetActivateNumberRequest) async throws -> (Int, Int) {
         let endpoint = SmsActivateEndpoint.getNumber(request)
         let result = await sendRequest(session: urlSession, endpoint: endpoint, responseModel: String.self)
         let response = try result.get()
@@ -128,14 +137,41 @@ public final class SmsActivateAPI: HTTPClient, ISmsActivateAPI {
         throw SmsActivateError.badAnswer
     }
     
-    public func setStatus(request: SetStatusRequest) async throws -> SetStatusResponse {
+    @discardableResult
+    public func setStatus(request: SetActivationStatusRequest) async throws -> SetActivationStatusResponse {
         let endpoint = SmsActivateEndpoint.setStatus(request)
         let result = await sendRequest(session: urlSession, endpoint: endpoint, responseModel: String.self)
         let response = try result.get()
-        if let status = SetStatusResponse(rawValue: response) {
+        if let status = SetActivationStatusResponse(rawValue: response) {
             return status
         }
         throw SmsActivateError.badAnswer
     }
-
+    
+    public func waitForCode(id: Int, attempts: Int = 40, setStatusAfterCompletion: Bool = false) async throws -> String {
+        if attempts <= 0 { throw SmsActivateError.noCodeReceived }
+        
+        let (status, code) = try await getStatus(id: id)
+        switch status {
+        case .ok, .waitRetry:
+            guard let code else { throw SmsActivateError.badAnswer }
+            
+            if setStatusAfterCompletion {
+                try await setStatus(request: SetActivationStatusRequest(id: id, status: .completeActivation))
+            }
+            return code
+        case .waitCode, .waitResend:
+            // Wait for 3 seconds before retrying
+            try await Task.sleep(nanoseconds: 3 * 1_000_000_000)
+            return try await waitForCode(id: id,
+                                         attempts: attempts - 1,
+                                         setStatusAfterCompletion: setStatusAfterCompletion)
+        case .cancel:
+            if setStatusAfterCompletion {
+                try await setStatus(request: SetActivationStatusRequest(id: id, status: .cancelActivation))
+            }
+            throw SmsActivateError.activationCancelled
+        }
+    }
+    
 }

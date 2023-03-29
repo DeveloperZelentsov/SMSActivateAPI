@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SetStatusRequest: Codable {
+public struct SetActivationStatusRequest: Codable {
     
     let id: Int
     let status: ActivationStatus

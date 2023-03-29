@@ -9,12 +9,12 @@ import Foundation
 
 public enum SmsActivateEndpoint {
     case getBalance(BalanceState)
-    case getNumber(GetNumberRequest)
+    case getNumber(GetActivateNumberRequest)
     
     case getStatus(id: Int)
     case getActiveActivations
     
-    case setStatus(SetStatusRequest)
+    case setStatus(SetActivationStatusRequest)
     
     case getOperators(country: Int?)
     case getCountries

@@ -53,7 +53,7 @@ final class SmsActivateApiTests: XCTestCase {
         }
         
         // Call API
-        let request = GetNumberRequest(service: .a9a)
+        let request = GetActivateNumberRequest(service: .a9a)
         Task {
             do {
                 let (id, phone) = try await smsActivateAPI.getNumber(request: request)
@@ -83,24 +83,24 @@ final class SmsActivateApiTests: XCTestCase {
             }
             """
         let responseData = mockResponse.data(using: .utf8)!
-        
+
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
             return (response, responseData)
         }
-        
+
         // Call API
         Task {
             do {
-                let operators = try await smsActivateAPI.getOperators(countryId: 1)
-                XCTAssertEqual(operators["0"], ["beeline", "megafon", "mts", "sber"], "Expected operators to match the mock response")
+                let operators = try await smsActivateAPI.getOperators(countryId: 0)
+                XCTAssertEqual(operators, ["beeline", "megafon", "mts", "sber"], "Expected operators to match the mock response")
                 self.expectation.fulfill()
             } catch {
                 XCTFail("Error should not be thrown.")
                 self.expectation.fulfill()
             }
         }
-        
+
         wait(for: [expectation], timeout: 1.0)
     }
     
@@ -197,11 +197,11 @@ final class SmsActivateApiTests: XCTestCase {
         }
         
         // Call API
-        let setStatusRequest = SetStatusRequest(id: 34134, status: .cancelActivation)
+        let setStatusRequest = SetActivationStatusRequest(id: 34134, status: .cancelActivation)
         Task {
             do {
                 let response = try await smsActivateAPI.setStatus(request: setStatusRequest)
-                XCTAssertEqual(response, SetStatusResponse.accessActivation, "Expected response to be .accessActivation")
+                XCTAssertEqual(response, SetActivationStatusResponse.accessActivation, "Expected response to be .accessActivation")
                 self.expectation.fulfill()
             } catch {
                 XCTFail("Error should not be thrown.")
@@ -212,4 +212,61 @@ final class SmsActivateApiTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
     }
     
+    func testWaitForCodeSuccess() {
+        // Prepare a mock response
+        let mockResponses = ["STATUS_WAIT_CODE", "STATUS_WAIT_CODE", "STATUS_OK:123456"]
+        var responseIndex = 0
+        
+        MockURLProtocol.requestHandler = { request in
+            let responseData = mockResponses[responseIndex].data(using: .utf8)
+            responseIndex += 1
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, responseData)
+        }
+        
+        // Call API
+        let id = 12345
+        Task {
+            do {
+                let code = try await self.smsActivateAPI.waitForCode(id: id)
+                XCTAssertEqual(code, "123456", "Expected code to be 123456")
+                self.expectation.fulfill()
+            } catch {
+                XCTFail("Error should not be thrown.")
+                self.expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 10.0)
+    }
+    
+    func testWaitForCodeErrorNoCodeReceived() {
+        // Prepare a mock response
+        let mockResponse = "STATUS_WAIT_CODE"
+        let responseData = mockResponse.data(using: .utf8)
+        
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, responseData)
+        }
+        
+        // Call API
+        let id = 12345
+        Task {
+            do {
+                let _ = try await self.smsActivateAPI.waitForCode(id: id, attempts: 2)
+                XCTFail("Error should be thrown.")
+                self.expectation.fulfill()
+            } catch {
+                if let error = error as? SmsActivateError {
+                    XCTAssertEqual(error, SmsActivateError.noCodeReceived, "Expected error to be .noCodeReceived")
+                } else {
+                    XCTFail("Unexpected error type: \(error)")
+                }
+                self.expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 10.0)
+    }
 }

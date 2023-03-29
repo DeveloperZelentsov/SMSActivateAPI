@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum SmsActivateError: String, Error, CaseIterable {
+public enum SmsActivateError: String, LocalizedError, CaseIterable {
     case badAction = "BAD_ACTION"
     case badService = "BAD_SERVICE"
     case badKey = "BAD_KEY"
@@ -19,9 +19,12 @@ public enum SmsActivateError: String, Error, CaseIterable {
     case badStatus = "BAD_STATUS"
     case noActivations = "NO_ACTIVATIONS"
     case operatorsNotFound = "OPERATORS_NOT_FOUND"
-    case badAnswer = ""
+    case badAnswer = "badAnswer"
+    case noCodeReceived = "noCodeReceived"
+    case activationCancelled = "activationCancelled"
     
-    var localizedDescription: String {
+    
+    public var errorDescription: String? {
         switch self {
         case .badAction:
             return "Incorrect action"
@@ -46,7 +49,11 @@ public enum SmsActivateError: String, Error, CaseIterable {
         case .operatorsNotFound:
             return "Operators not found"
         case .badAnswer:
-            return "Bad answer"
+            return "Incorrect answer"
+        case .noCodeReceived:
+            return "No code was received after the specified number of attempts."
+        case .activationCancelled:
+            return "The activation was cancelled."
         }
     }
 }

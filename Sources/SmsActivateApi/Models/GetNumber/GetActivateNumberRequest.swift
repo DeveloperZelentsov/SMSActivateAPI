@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct GetNumberRequest: Codable {
+public struct GetActivateNumberRequest: Codable {
 
     let service: Service
     let forward: Bool?
