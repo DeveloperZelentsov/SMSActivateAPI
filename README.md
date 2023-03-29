@@ -70,6 +70,20 @@ do {
 }
 ```
 
+### Wait for code ###
+
+The `waitForCode(id: Int, attempts: Int = 40, setStatusAfterCompletion: Bool = false)` function is an asynchronous method designed to simplify the process of waiting for an SMS code to be received for a specific activation. This function periodically checks the activation status until a code is received or a specified number of attempts has been reached.
+
+```swift
+do {
+    let activationId = 12345
+    let code = try await smsActivateAPI.waitForCode(id: activationId)
+    print("Received code: \(code)")
+} catch {
+    print("Error: \(error)")
+}
+```
+
 ### Get activation status ###
 
 To get the activation status, call the `getStatus(id: Int)` function:
