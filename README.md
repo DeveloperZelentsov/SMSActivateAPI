@@ -2,6 +2,8 @@
 
 A Swift package for interacting with the [SMS Activate](https://sms-activate.org/?ref=921566) API. This package provides an easy way to manage phone numbers for SMS-based verification services.
 
+[![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/zelentsov)
+
 ## Features ##
 
 * Get account balance and cashback information
